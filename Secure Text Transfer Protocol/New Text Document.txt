@@ -1,0 +1,149 @@
+
+Using Diffie-Hellman Key Exchange for File Encryption and Decryption
+
+
+In this article, we will explore how to use the Diffie-Hellman key exchange algorithm to securely encrypt and decrypt files. The Diffie-Hellman algorithm allows two parties to establish a shared secret key over an insecure channel without directly transmitting the key.
+
+
+ Copy code
+
+
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+from Crypto.Util.Padding import unpad, pad
+import hashlib
+import random
+import os
+import tkinter as tk
+from tkinter import filedialog
+
+class DiffieHellman:
+    def __init__(self):
+        self.p = 23  # Prime number
+        self.g = 5   # Primitive root modulo of p
+        self.private_key = random.randint(1, self.p - 1)
+        self.public_key = pow(self.g, self.private_key, self.p)
+        self.secret_key = None
+
+    def generate_secret_key(self, other_public_key):
+        self.secret_key = pow(other_public_key, self.private_key, self.p)
+
+class StandaloneApplication:
+    def __init__(self):
+        self.dh = DiffieHellman()
+        self.secret_key = None
+
+    def generate_dh_keys(self):
+        return self.dh.public_key
+
+    def generate_secret_key(self, other_public_key):
+        self.dh.generate_secret_key(other_public_key)
+        self.secret_key = hashlib.sha256(str(self.dh.secret_key).encode()).digest()
+
+    def encrypt_file(self):
+        if not self.secret_key:
+            raise ValueError("Secret key not generated.")
+        
+        root = tk.Tk()
+        root.withdraw()
+        file_path = filedialog.askopenfilename(title="Select File to Encrypt")
+
+        with open(file_path, 'rb') as file:
+            plaintext = file.read()
+
+        cipher = AES.new(self.secret_key, AES.MODE_CBC)
+        ciphertext = cipher.encrypt(pad(plaintext, AES.block_size))
+
+        output_file_path = filedialog.asksaveasfilename(title="Save Encrypted File As", defaultextension=".enc")
+        with open(output_file_path, 'wb') as file:
+            file.write(cipher.iv + ciphertext)
+
+    def decrypt_file(self):
+        if not self.secret_key:
+            raise ValueError("Secret key not generated.")
+        
+        root = tk.Tk()
+        root.withdraw()
+        file_path = filedialog.askopenfilename(title="Select File to Decrypt")
+
+        with open(file_path, 'rb') as file:
+            iv = file.read(16)
+            ciphertext = file.read()
+
+        cipher = AES.new(self.secret_key, AES.MODE_CBC, iv=iv)
+        try:
+            plaintext = unpad(cipher.decrypt(ciphertext), AES.block_size)
+        except ValueError:
+            print("Padding is incorrect. File may be corrupted or not encrypted properly.")
+            return
+
+        output_file_path = filedialog.asksaveasfilename(title="Save Decrypted File As")
+        with open(output_file_path, 'wb') as file:
+            file.write(plaintext)
+
+if __name__ == "__main__":
+    app = StandaloneApplication()
+
+    # Step 1: Generate Diffie-Hellman keys
+    print("Generate Diffie-Hellman keys...")
+    my_public_key = app.generate_dh_keys()
+    print("My public key:", my_public_key)
+
+
+    # Step 2: Exchange public keys and generate secret key
+    other_public_key = int(input("Enter other user's public key: "))
+    app.generate_secret_key(other_public_key)
+
+    # Step 3: Encrypt file
+    print("Encrypting file...")
+    app.encrypt_file()
+    print("File encrypted successfully.")
+
+    # Step 4: Decrypt file
+    print("Decrypting file...")
+    app.decrypt_file()
+    print("File decrypted successfully.")
+
+
+
+Introduction
+
+
+When it comes to securing sensitive information, encryption plays a crucial role. However, securely exchanging encryption keys can be a challenge, especially when communicating over an insecure channel. This is where the Diffie-Hellman key exchange algorithm comes into play.
+
+The Diffie-Hellman algorithm allows two parties to establish a shared secret key without directly transmitting the key. Instead, each party generates a public-private key pair and exchanges their public keys. Using their own private keys and the received public key, both parties can independently compute the same shared secret key.
+
+
+
+
+Implementation
+
+
+To implement the Diffie-Hellman key exchange algorithm for file encryption and decryption, we will use the Crypto library in Python. This library provides various cryptographic functions, including the AES encryption algorithm.
+
+The code provided above demonstrates how to use the Diffie-Hellman key exchange algorithm to securely encrypt and decrypt files. Let's break down the code into different sections:
+
+The DiffieHellman class represents the Diffie-Hellman key exchange process. It initializes the prime number p, the primitive root modulo g, the private key, the public key, and the secret key.
+
+The StandaloneApplication class encapsulates the file encryption and decryption functionality. It uses an instance of the DiffieHellman class to generate the public and secret keys.
+
+The generate_dh_keys method generates the Diffie-Hellman public key.
+
+The generate_secret_key method generates the secret key using the other party's public key.
+
+The encrypt_file method encrypts a selected file using the AES encryption algorithm. It prompts the user to select a file, reads the file's contents, encrypts the plaintext using the secret key, and saves the encrypted file.
+
+The decrypt_file method decrypts a selected file using the AES decryption algorithm. It prompts the user to select an encrypted file, reads the file's contents, decrypts the ciphertext using the secret key, and saves the decrypted file.
+
+In the main section, the application is initialized, and the Diffie-Hellman key exchange process is performed. The user is prompted to enter the other party's public key. Then, the file encryption and decryption steps are executed.
+
+
+
+
+Conclusion
+
+	The Diffie-Hellman key exchange algorithm provides a secure way to establish a shared secret key between two parties. By combining this algorithm with the AES encryption algorithm, we can securely encrypt and decrypt files without directly transmitting the encryption key.
+
+In this article, we have explored how to use the Diffie-Hellman key exchange algorithm for file encryption and decryption in Python. The provided code demonstrates the implementation of this algorithm and can be used as a starting point for building secure file encryption applications.
+
+
